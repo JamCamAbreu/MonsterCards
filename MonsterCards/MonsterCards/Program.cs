@@ -10,6 +10,7 @@ namespace MonsterCards {
     public const int CARD_HEIGHT = 8;
     public const int CARD_WIDTH = 25;
     public const int MAX_HAND = 5;
+    public const string GAME_NAME = "Age of Cards";
   }
 
   static public class Utilities {
@@ -22,7 +23,6 @@ namespace MonsterCards {
       }
       return ret;
     }
-
 
   }
 
@@ -241,11 +241,24 @@ namespace MonsterCards {
   public class player {
     public Queue<entity> deck;
     public List<entity> hand;
+    public List<string> handLines;
+    public int longestLine;
 
     // Constructor:
     public player () {
       deck = new Queue<entity>();
       hand = new List<entity>();
+      handLines = new List<string>();
+      longestLine = 0;
+    }
+
+
+    private void getLongestLine() {
+      int max = 0;
+      foreach (string s in handLines) {
+        if (s.Length > max) max = s.Length;
+      }
+      longestLine = max;
     }
 
     // Draw cards:
@@ -257,6 +270,9 @@ namespace MonsterCards {
         hand.Add(e);
         i++;
       }
+
+      // Update hand lines for printout:
+      updateHandLines();
     }
 
     // Discard cards:
@@ -295,8 +311,11 @@ namespace MonsterCards {
       deck.Enqueue(c);
     }
 
-    // Print lines:
-    public void printHand() {
+    // get each line:
+    public void updateHandLines() {
+
+      handLines.Clear();
+
       string curLine;
       int ind = 4 + 4 * (Constants.MAX_HAND - hand.Count);
       string indent = Utilities.getSpaces(ind);
@@ -309,12 +328,113 @@ namespace MonsterCards {
           curLine += indent;
         }
 
-        Console.WriteLine(curLine);
+        handLines.Add(curLine);
       }
 
+      getLongestLine();
     }
 
+
+    public void printHandLines() {
+      foreach (string s in handLines) {
+        Console.WriteLine(s);
+      }
+    }
+
+
+    public void printPlayerName(string pName) {
+      int i;
+      string border = "+";
+      for (i = 0; i < pName.Length + 2; i++) { border += "-"; }
+      border += "+";
+
+      string indent = "";
+      for (i = 0; i < (longestLine/2 - pName.Length/2); i++) { indent += " "; }
+      Console.WriteLine(indent + border);
+      Console.WriteLine(indent + "| " + pName + " |");
+      Console.WriteLine(indent + border);
+    }
+
+
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  public class game {
+
+    public player human;
+    public player opponent;
+    int turn;
+
+    // Constructor:
+    public game() {
+      human = new player();
+      opponent = new player();
+      turn = 0;
+
+      Console.Clear();
+    }
+
+
+    public void drawHands() {
+
+      opponent.printPlayerName("King Barbabos");
+      opponent.printHandLines();
+      Console.WriteLine();
+      Console.WriteLine();
+      Console.WriteLine();
+      Console.WriteLine();
+      human.printHandLines();
+      opponent.printPlayerName("Me");
+
+      Console.WriteLine("\n");
+      Console.WriteLine("\n");
+    }
+
+    public void drawMenu() {
+      Console.WriteLine("+----------------------------------+"); // 36
+      string curLine = "| " + Constants.GAME_NAME;
+      curLine += Utilities.getSpaces(36 - curLine.Length - 1) + "|";
+      Console.WriteLine(curLine);
+
+      curLine = "| Current Turn: " + turn.ToString();
+      curLine += Utilities.getSpaces(36 - curLine.Length - 1) + "|";
+      Console.WriteLine(curLine);
+
+      Console.WriteLine("+----------------------------------+"); // 36
+    }
+
+
+
+    public void draw() {
+      Console.Clear();
+      drawMenu();
+      drawHands();
+
+      Console.ReadKey();
+    }
+
+
+    public void beginTurn() {
+      turn++;
+      draw();
+    }
+
+
+  }
+
+
 
 
 
@@ -326,26 +446,21 @@ namespace MonsterCards {
 
       Random ran = new Random();
 
-      player p = new player();
+      game g = new game();
       for (int i = 0; i < 20; i++) {
         int t = ran.Next(0, (int)entity.type.SIZE - 1);
-        p.gainCard((entity.type)t); // casting from int to card type
+        int t2 = ran.Next(0, (int)entity.type.SIZE - 1);
+        g.opponent.gainCard((entity.type)t); // casting from int to card type
+        g.human.gainCard((entity.type)t2); // casting from int to card type
       }
 
-      p.drawCards(3);
-      p.printHand();
-      p.discardHand();
-      Console.WriteLine("\n\n");
-
-      p.drawCards(5);
-      p.printHand();
-      p.discardHand();
-      Console.WriteLine("\n\n");
-
-      p.drawCards(1);
-      p.printHand();
-      p.discardHand();
-      Console.WriteLine("\n\n");
+      while (true) {
+        g.opponent.drawCards(5);
+        g.human.drawCards(5);
+        g.beginTurn();
+        g.opponent.discardHand();
+        g.human.discardHand();
+      }
 
       // End of program
       Console.WriteLine("Press any key to exit");
